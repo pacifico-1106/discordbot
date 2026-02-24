@@ -80,17 +80,20 @@ python3 admin_bot.py  # Mac mini #2
 
 ---
 
-### オプション2: Railway ✅ **クラウド推奨**
+### オプション2: Railway ⚠️ **有料（月$5〜）**
 
 **メリット:**
 - 常時稼働
 - 簡単なデプロイ（GitHub連携）
-- 無料枠あり（月500時間）
 - 環境変数の管理が簡単
 
 **コスト:**
-- Free tier: $5クレジット/月
-- Hobby: $5/月〜
+- **無料トライアル**: 初回30日間、$5クレジット（使い切るか30日経過で終了）
+- **Free Plan**: 月$1クレジットのみ（実質利用不可）
+- **Hobby Plan**: **月$5**（$5分の使用量込み、超過分は従量課金）
+- **Pro Plan**: 月$20（$20分のクレジット込み）
+
+⚠️ **注意**: 2024年以降、Railwayは完全無料プランを廃止しました。継続利用には最低月$5が必要です。
 
 **セットアップ:**
 1. [Railway](https://railway.app/) にサインアップ
@@ -106,16 +109,18 @@ python3 admin_bot.py  # Mac mini #2
 
 ---
 
-### オプション3: Render ✅
+### オプション3: Render ⚠️ **制限あり無料枠**
 
 **メリット:**
-- 無料枠あり
+- 無料枠あり（制限あり）
 - GitHub連携
 - 自動デプロイ
 
 **コスト:**
-- Free tier: あり（制限あり）
-- Starter: $7/月〜
+- **Free tier**: あり（但し制限あり - 750時間/月、15分間非アクティブでスリープ）
+- **Starter**: $7/月〜
+
+⚠️ **注意**: 無料枠は15分間非アクティブでスリープするため、Discord Botには不向きです。実質的には有料プラン推奨。
 
 **セットアップ:**
 1. [Render](https://render.com/) にサインアップ
@@ -189,7 +194,80 @@ sudo systemctl status salesbot
 
 ---
 
-### オプション5: Docker + 任意のホスティング
+### オプション5: Oracle Cloud (Always Free Tier) ✅ **完全無料**
+
+**メリット:**
+- **永久無料枠**（Arm CPUベースのVM: 最大4コア、24GB RAM）
+- 常時稼働可能
+- クレジットカード登録必要だが課金なし
+- 高性能（Discord Bot複数台でも余裕）
+
+**コスト:**
+- **完全無料**（Always Free Tierは永久無料）
+
+**セットアップ:**
+1. [Oracle Cloud](https://www.oracle.com/cloud/free/) にサインアップ
+2. Compute → Instances → Create Instance
+3. Shape: **VM.Standard.A1.Flex**（Arm、Always Free対象）を選択
+4. OS: Ubuntu 22.04
+5. SSH鍵を設定してインスタンス作成
+6. SSH接続してセットアップ：
+
+```bash
+# SSH接続
+ssh -i your-key.pem ubuntu@your-instance-ip
+
+# システム更新
+sudo apt update && sudo apt upgrade -y
+
+# Python3とgitをインストール
+sudo apt install python3 python3-pip git -y
+
+# リポジトリをクローン
+git clone https://github.com/pacifico-1106/discordbot.git
+cd discordbot
+
+# 依存関係をインストール
+pip3 install -r requirements.txt
+
+# 環境変数を設定
+cp .env.example .env
+nano .env  # APIキーとトークンを設定
+
+# systemdでサービス化
+sudo nano /etc/systemd/system/salesbot.service
+sudo nano /etc/systemd/system/adminbot.service
+
+# サービスを有効化
+sudo systemctl enable salesbot adminbot
+sudo systemctl start salesbot adminbot
+
+# 状態確認
+sudo systemctl status salesbot
+sudo systemctl status adminbot
+```
+
+**systemdサービスファイル例** (`/etc/systemd/system/salesbot.service`):
+```ini
+[Unit]
+Description=307-Sales Discord Bot
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/discordbot
+ExecStart=/usr/bin/python3 /home/ubuntu/discordbot/sales_bot.py
+Restart=always
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target
+```
+
+---
+
+### オプション6: Docker + 任意のホスティング
 
 **メリット:**
 - 環境の再現性
@@ -323,26 +401,34 @@ import os
 
 ---
 
-## コスト比較
+## コスト比較（2025年最新版）
 
-| オプション | 初期費用 | 月額費用 | 管理の手間 | 推奨度 |
-|-----------|---------|---------|-----------|--------|
-| Mac mini | 0円 | 0円 | 中 | ★★★★★ |
-| Railway | 0円 | 0円〜$5 | 低 | ★★★★☆ |
-| Render | 0円 | 0円〜$7 | 低 | ★★★★☆ |
-| AWS Lightsail | 0円 | $3.50〜 | 中 | ★★★☆☆ |
-| AWS EC2 | 0円 | $8〜 | 高 | ★★☆☆☆ |
+| オプション | 初期費用 | 月額費用 | 管理の手間 | 完全無料 | 推奨度 |
+|-----------|---------|---------|-----------|---------|--------|
+| **Mac mini** | 0円 | **0円** | 中 | ✅ | ★★★★★ |
+| **Oracle Cloud** | 0円 | **0円** | 中 | ✅ | ★★★★★ |
+| Railway | 0円 | **$5〜** | 低 | ❌ | ★★★☆☆ |
+| Render | 0円 | **$7〜** | 低 | ❌ | ★★☆☆☆ |
+| AWS Lightsail | 0円 | **$3.50〜** | 中 | ❌ | ★★★☆☆ |
+| AWS EC2 | 0円 | **$8〜** | 高 | ❌ | ★★☆☆☆ |
 
 ---
 
-## 推奨デプロイ戦略
+## 推奨デプロイ戦略（2025年最新版）
 
-### 開発・テスト環境
-- Mac miniでローカル実行（無料、高速デバッグ）
+### 💰 完全無料で運用したい場合
+1. **Mac mini**（デモ・短期用に最適）
+2. **Oracle Cloud Always Free Tier**（長期運用に最適）
 
-### 本番環境
-- **短期（デモ用）**: Mac mini + launchd（自動起動）
-- **長期（安定運用）**: Railway または Render（簡単、低コスト）
+### 💳 有料でも簡単に運用したい場合
+1. **Railway**（月$5、GitHub連携が簡単）
+2. **AWS Lightsail**（月$3.50、安定）
+
+### 🎯 2/27デモ用の推奨構成
+- **Mac mini**（追加コストなし、即座に動作確認可能）
+
+### 📈 長期安定運用の推奨構成
+- **Oracle Cloud Always Free Tier**（完全無料、高性能、永久利用可能）
 
 ---
 
