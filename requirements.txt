@@ -1,0 +1,10 @@
+# Discord Bot System Requirements
+
+# Discord API
+discord.py>=2.3.0
+
+# Anthropic Claude API
+anthropic>=0.39.0
+
+# Environment variables management
+python-dotenv>=1.0.0

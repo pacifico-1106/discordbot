@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  sales-bot:
+    build: .
+    container_name: 307-sales-bot
+    command: python3 sales_bot.py
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      - ./workspace:/app/workspace:ro  # Read-only mount
+      - ./logs:/app/logs  # ログ保存用
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  admin-bot:
+    build: .
+    container_name: 307-admin-bot
+    command: python3 admin_bot.py
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      - ./workspace:/app/workspace:ro  # Read-only mount
+      - ./logs:/app/logs  # ログ保存用
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
