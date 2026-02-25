@@ -4,7 +4,7 @@ Anthropic APIとの通信を管理する共通クライアント
 """
 import anthropic
 from typing import List, Dict
-from shared.config import ANTHROPIC_API_KEY, CLAUDE_MODEL, MAX_RESPONSE_LENGTH
+from shared.config import ANTHROPIC_API_KEY, CLAUDE_MODEL
 
 
 class ClaudeClient:
@@ -18,7 +18,7 @@ class ClaudeClient:
         self,
         system_prompt: str,
         messages: List[Dict[str, str]],
-        max_tokens: int = 1500
+        max_tokens: int = 4096
     ) -> str:
         """
         Claude APIからレスポンスを取得
@@ -26,10 +26,10 @@ class ClaudeClient:
         Args:
             system_prompt: システムプロンプト
             messages: 会話履歴 [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
-            max_tokens: 最大トークン数（デフォルト1500でDiscord制限に収まる）
+            max_tokens: 最大トークン数
 
         Returns:
-            Claudeからの返答テキスト（Discord制限2000文字に収まるよう調整）
+            Claudeからの返答テキスト（Botコード側で自動分割される）
         """
         try:
             response = self.client.messages.create(
@@ -40,10 +40,7 @@ class ClaudeClient:
             )
             text = response.content[0].text
 
-            # Discord の文字数制限（2000文字）対策
-            if len(text) > MAX_RESPONSE_LENGTH:
-                text = text[:MAX_RESPONSE_LENGTH-50] + "\n\n...(続きは省略されました)"
-
+            # 応答をそのまま返す（分割処理はBot側で実施）
             return text
         except Exception as e:
             error_msg = f"Claude API エラー: {str(e)}"

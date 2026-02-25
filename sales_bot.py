@@ -90,6 +90,12 @@ class SalesBot:
 
         channel_id = message.channel.id
 
+        # 古いメッセージ（5秒以上前）は無視
+        import datetime
+        now = datetime.datetime.now(datetime.timezone.utc)
+        if (now - message.created_at).total_seconds() > 5:
+            return
+
         # 人間からのメッセージの場合、ラリーカウンターをリセット
         if not message.author.bot:
             self.rally_counter[channel_id] = {"count": 0, "last_bot_id": None}
@@ -126,13 +132,53 @@ class SalesBot:
                 messages=claude_messages
             )
 
-        # 応答を送信
-        await message.channel.send(response)
+        # 応答を送信（2000文字制限対応：自動分割）
+        await self._send_response(message.channel, response)
 
         # 自分が送信したことを記録
         self.rally_counter[channel_id]["last_bot_id"] = self.bot_id
 
         print(f"[{self.bot_name}] 応答送信 (Rally: {current_rally_count}/{MAX_RALLY_COUNT})")
+
+    async def _send_response(self, channel, response: str):
+        """
+        応答を送信（Discord 2000文字制限対応：自動分割）
+        """
+        MAX_LENGTH = 1900  # 余裕を持たせる
+
+        if len(response) <= MAX_LENGTH:
+            # 2000文字以内ならそのまま送信
+            await channel.send(response)
+        else:
+            # 2000文字超える場合は分割送信
+            chunks = []
+            current_chunk = ""
+
+            # 段落単位で分割（\n\nで分ける）
+            paragraphs = response.split('\n\n')
+
+            for paragraph in paragraphs:
+                # 段落を追加しても制限内なら追加
+                if len(current_chunk) + len(paragraph) + 2 <= MAX_LENGTH:
+                    if current_chunk:
+                        current_chunk += '\n\n'
+                    current_chunk += paragraph
+                else:
+                    # 制限を超える場合は現在のchunkを保存
+                    if current_chunk:
+                        chunks.append(current_chunk)
+                    current_chunk = paragraph
+
+            # 最後のchunkを追加
+            if current_chunk:
+                chunks.append(current_chunk)
+
+            # 分割して送信
+            for i, chunk in enumerate(chunks, 1):
+                if i == 1:
+                    await channel.send(chunk)
+                else:
+                    await channel.send(f"**(続き {i}/{len(chunks)})**\n\n{chunk}")
 
     async def _add_to_history(self, channel_id: int, message: discord.Message):
         """会話履歴にメッセージを追加"""
