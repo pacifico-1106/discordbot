@@ -39,6 +39,7 @@ SERVER_ID = 1475845134242283613
 # Bot間連携設定
 MAX_RALLY_COUNT = 3  # Bot間の最大ラリー回数
 MAX_HISTORY_LENGTH = 20  # 保持する会話履歴の最大件数
+MAX_RESPONSE_LENGTH = 1800  # Discord応答の最大文字数（2000文字制限のため余裕を持たせる）
 
 # Bot情報マッピング
 BOT_INFO = {
