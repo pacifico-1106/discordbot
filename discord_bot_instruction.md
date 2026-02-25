@@ -21,9 +21,9 @@ Discord上で2つのAI Bot（Sales Bot / Admin Bot）が以下のように動作
 
 ## Discord情報（既存）
 - サーバー: 307 AI Team（ID: 1475845134242283613）
-- Bot A（307-Sales）Token: MTQ3NTg0NjYyMDk2Nzk5MzQyNA.GjfjRG.tMYhO5QPy6QhV_rTPil0plQDg4r_s5uxoLQLN0
+- Bot A（307-Sales）Token: [REGENERATED - SEE .env FILE]
   - Application ID: 1475846620967993424
-- Bot B（307-Admin）Token: MTQ3NTg0ODIzODQyNTk2NDY2Ng.Gql2Ma.NYukFP9W3K9Pwdt3eGsdfkMhEyNP7YI_IQNBfo
+- Bot B（307-Admin）Token: [REGENERATED - SEE .env FILE]
   - Application ID: 1475848238425964666
 - チャンネル: 
   - #sales-work: 1475845642432811070
