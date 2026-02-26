@@ -8,6 +8,8 @@ from collections import defaultdict
 from typing import Dict, List
 from shared.config import BOT_INFO, MAX_RALLY_COUNT, MAX_HISTORY_LENGTH
 from shared.claude_client import ClaudeClient, load_system_prompt
+from shared.file_processor import FileProcessor
+import datetime
 
 
 class SalesBot:
@@ -181,18 +183,84 @@ class SalesBot:
                     await channel.send(f"**(続き {i}/{len(chunks)})**\n\n{chunk}")
 
     async def _add_to_history(self, channel_id: int, message: discord.Message):
-        """会話履歴にメッセージを追加"""
-        # メンションを除去したクリーンなコンテンツ
-        content = message.content
-
+        """会話履歴にメッセージを追加（添付ファイル対応）"""
         # ユーザー情報
         author_name = message.author.display_name
         is_bot = message.author.bot
 
+        # メッセージコンテンツを構築
+        content_parts = []
+
+        # テキスト部分
+        if message.content:
+            content_parts.append({
+                "type": "text",
+                "text": f"[{author_name}{'(Bot)' if is_bot else ''}]: {message.content}"
+            })
+
+        # 添付ファイルの処理
+        if message.attachments:
+            for attachment in message.attachments:
+                print(f"📎 添付ファイル検出: {attachment.filename}")
+
+                result = await FileProcessor.process_attachment(attachment)
+
+                if result['error']:
+                    # エラーの場合はテキストで追加
+                    content_parts.append({
+                        "type": "text",
+                        "text": f"\n[添付ファイル: {result['filename']}] {result['error']}"
+                    })
+                elif result['type'] == 'image':
+                    # 画像の場合
+                    content_parts.append({
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": result['content']['media_type'],
+                            "data": result['content']['data']
+                        }
+                    })
+                    content_parts.append({
+                        "type": "text",
+                        "text": f"\n[添付画像: {result['filename']}]"
+                    })
+                elif result['type'] == 'text':
+                    # ドキュメントの場合（抽出したテキスト）
+                    content_parts.append({
+                        "type": "text",
+                        "text": f"\n\n--- 添付ファイル: {result['filename']} ---\n{result['content']}"
+                    })
+
+        # URLリンクの抽出と通知
+        if message.content:
+            urls = FileProcessor.extract_urls(message.content)
+            if urls:
+                url_text = "\n\n[検出されたURL]:\n" + "\n".join(f"- {url}" for url in urls)
+                content_parts.append({
+                    "type": "text",
+                    "text": url_text
+                })
+
+                # Google Drive リンクの場合は注意喚起
+                for url in urls:
+                    if FileProcessor.is_google_drive_url(url):
+                        content_parts.append({
+                            "type": "text",
+                            "text": "\n⚠️ Google Driveリンクが含まれています。共有設定を確認してください。"
+                        })
+                        break
+
+        # コンテンツが1つの場合は文字列に、複数の場合はリストに
+        if len(content_parts) == 1 and content_parts[0]["type"] == "text":
+            message_content = content_parts[0]["text"]
+        else:
+            message_content = content_parts
+
         # 履歴に追加
         self.conversation_history[channel_id].append({
             "role": "user",
-            "content": f"[{author_name}{'(Bot)' if is_bot else ''}]: {content}"
+            "content": message_content
         })
 
         # 履歴が長すぎる場合は古いものを削除

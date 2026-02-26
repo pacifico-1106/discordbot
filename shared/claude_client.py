@@ -17,7 +17,7 @@ class ClaudeClient:
     async def get_response(
         self,
         system_prompt: str,
-        messages: List[Dict[str, str]],
+        messages: List[Dict],
         max_tokens: int = 4096
     ) -> str:
         """
@@ -25,7 +25,9 @@ class ClaudeClient:
 
         Args:
             system_prompt: システムプロンプト
-            messages: 会話履歴 [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
+            messages: 会話履歴
+                文字列の場合: [{"role": "user", "content": "..."}]
+                画像を含む場合: [{"role": "user", "content": [{"type": "text", "text": "..."}, {"type": "image", ...}]}]
             max_tokens: 最大トークン数
 
         Returns:
