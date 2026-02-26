@@ -18,7 +18,7 @@ class FileProcessor:
 
     # サポートするファイル形式
     SUPPORTED_IMAGES = ['.png', '.jpg', '.jpeg', '.gif', '.webp']
-    SUPPORTED_DOCS = ['.pdf', '.xlsx', '.xls', '.pptx', '.ppt', '.txt', '.md', '.csv']
+    SUPPORTED_DOCS = ['.pdf', '.xlsx', '.xls', '.pptx', '.ppt', '.docx', '.doc', '.txt', '.md', '.csv', '.yaml', '.yml', '.json']
 
     @staticmethod
     async def download_file(url: str) -> Optional[bytes]:
@@ -117,8 +117,36 @@ class FileProcessor:
             return f"PowerPoint処理エラー: {str(e)}"
 
     @staticmethod
+    async def process_word(file_bytes: bytes) -> str:
+        """Wordファイル(.docx)からテキストを抽出"""
+        try:
+            from docx import Document
+            word_file = io.BytesIO(file_bytes)
+            document = Document(word_file)
+
+            text_content = []
+            for paragraph in document.paragraphs:
+                if paragraph.text.strip():
+                    text_content.append(paragraph.text)
+
+            # 表の内容も抽出
+            for table in document.tables:
+                text_content.append("\n--- 表 ---")
+                for row in table.rows:
+                    row_data = [cell.text.strip() for cell in row.cells]
+                    if any(row_data):
+                        text_content.append(" | ".join(row_data))
+
+            if not text_content:
+                return "Wordファイルからテキストを抽出できませんでした"
+
+            return "\n".join(text_content)
+        except Exception as e:
+            return f"Word処理エラー: {str(e)}"
+
+    @staticmethod
     async def process_text(file_bytes: bytes) -> str:
-        """テキストファイルを読み込み"""
+        """テキストファイルを読み込み（TXT, MD, CSV, YAML, JSON等）"""
         try:
             # UTF-8でデコード、失敗したらShift-JISを試す
             try:
@@ -210,8 +238,13 @@ class FileProcessor:
             result['type'] = 'text'
             result['content'] = await cls.process_powerpoint(file_bytes)
 
-        # テキストファイル
-        elif filename.endswith(('.txt', '.md', '.csv')):
+        # Wordファイル
+        elif filename.endswith(('.docx', '.doc')):
+            result['type'] = 'text'
+            result['content'] = await cls.process_word(file_bytes)
+
+        # テキストファイル（TXT, MD, CSV, YAML, JSON等）
+        elif filename.endswith(('.txt', '.md', '.csv', '.yaml', '.yml', '.json')):
             result['type'] = 'text'
             result['content'] = await cls.process_text(file_bytes)
 
